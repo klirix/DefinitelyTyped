@@ -22,7 +22,7 @@ export interface RequestHandler<
     P extends ParamsDictionary = ParamsDictionary,
     ReqBody = any,
     ReqQuery = ParsedUrlQuery
-> {
+    > {
     (req: Request<P, ReqBody, ReqQuery>, res: ServerResponse, next: Next): void;
 }
 /**
@@ -32,7 +32,7 @@ export type Middleware<
     P extends ParamsDictionary = ParamsDictionary,
     ReqBody = any,
     ReqQuery = ParsedUrlQuery
-> = RequestHandler<P, ReqBody, ReqQuery>;
+    > = RequestHandler<P, ReqBody, ReqQuery>;
 
 /**
  * Calls the next middleware function in the chain, or throws an error.
@@ -46,7 +46,7 @@ export interface Request<
     P extends ParamsDictionary = ParamsDictionary,
     ReqBody = any,
     ReqQuery = ParsedUrlQuery
-> extends IncomingMessage {
+    > extends IncomingMessage {
     /**
      * The originally-requested URL, including parent router segments.
      */
@@ -81,7 +81,7 @@ interface ParsedUrl {
     path: string;
     href: string;
     _raw?: string;
-    }
+}
 
 /**
  * An instance of the Polka router.
@@ -103,8 +103,8 @@ declare class Polka extends Trouter<RequestHandler> {
      * These will execute before your routes' handlers.
      */
     use(
-    pattern: string | RegExp,
-    ...handlers: RequestHandler[] | Polka[]
+        pattern: string | RegExp,
+        ...handlers: RequestHandler[] | Polka[]
     ): this;
 
     /**
@@ -112,26 +112,26 @@ declare class Polka extends Trouter<RequestHandler> {
      * All arguments are passed to server.listen directly with no changes.
      */
     listen(
-    port?: number,
-    hostname?: string,
-    backlog?: number,
-    listeningListener?: () => void
+        port?: number,
+        hostname?: string,
+        backlog?: number,
+        listeningListener?: () => void
     ): this;
     listen(
-    port?: number,
-    hostname?: string,
-    listeningListener?: () => void
+        port?: number,
+        hostname?: string,
+        listeningListener?: () => void
     ): this;
     listen(
-    port?: number,
-    backlog?: number,
-    listeningListener?: () => void
+        port?: number,
+        backlog?: number,
+        listeningListener?: () => void
     ): this;
     listen(port?: number, listeningListener?: () => void): this;
     listen(
-    path: string,
-    backlog?: number,
-    listeningListener?: () => void
+        path: string,
+        backlog?: number,
+        listeningListener?: () => void
     ): this;
     listen(path: string, listeningListener?: () => void): this;
     listen(options: ListenOptions, listeningListener?: () => void): this;
@@ -155,7 +155,7 @@ type VerbHandler = <
     P extends ParamsDictionary = ParamsDictionary,
     ReqBody = any,
     ReqQuery = ParsedUrlQuery
->(
+    >(
     pattern: string | RegExp,
     ...handlers: RequestHandler<P, ReqBody, ReqQuery>[]
 ) => Polka;
