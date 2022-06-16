@@ -3,151 +3,181 @@
 // Definitions by: Piotr Kuczynski <https://github.com/pkuczynski>
 //                 James Messinger <https://github.com/JamesMessinger>
 //                 Brian Takita <https://github.com/btakita>
+//                 Askhat Saiapov <https://github.com/klirix>
 // Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
 // Minimum TypeScript Version: 3.7
 
 /// <reference types="node" />
 
-import { RequestHandler } from 'express';
-import { Params, ParamsDictionary, Query } from 'express-serve-static-core';
-import { IncomingMessage, Server, ServerResponse } from 'http';
-import * as Trouter from 'trouter';
-import { Url } from 'url';
+import { IncomingMessage, Server, ServerResponse } from "http";
+import { ParsedUrlQuery } from "querystring";
+import { ListenOptions } from "net";
+import Trouter = require('trouter');
 
-declare namespace polka {
+interface ParamsDictionary {
+    [key: string]: string;
+}
+
+export interface RequestHandler<
+    P extends ParamsDictionary = ParamsDictionary,
+    ReqBody = any,
+    ReqQuery = ParsedUrlQuery
+> {
+    (req: Request<P, ReqBody, ReqQuery>, res: ServerResponse, next: Next): void;
+}
+/**
+ * A middleware function
+ */
+export type Middleware<
+    P extends ParamsDictionary = ParamsDictionary,
+    ReqBody = any,
+    ReqQuery = ParsedUrlQuery
+> = RequestHandler<P, ReqBody, ReqQuery>;
+
+/**
+ * Calls the next middleware function in the chain, or throws an error.
+ */
+type Next = (err?: string | Error) => void;
+
+/**
+ * An `http.IncomingMessage`, extended by Polka
+ */
+export interface Request<
+    P extends ParamsDictionary = ParamsDictionary,
+    ReqBody = any,
+    ReqQuery = ParsedUrlQuery
+> extends IncomingMessage {
     /**
-     * A middleware function
+     * The originally-requested URL, including parent router segments.
      */
-    type Middleware<P extends Params = ParamsDictionary, ResBody = any, ReqBody = any, ReqQuery = Query> = RequestHandler<P, ResBody, ReqBody, ReqQuery>;
+    originalUrl: string;
 
     /**
-     * Calls the next middleware function in the chain, or throws an error.
+     * The path portion of the requested URL.
      */
-    type Next = (err?: string | Error) => void;
+    path: string;
 
     /**
-     * An `http.IncomingMessage`, extended by Polka
+     * The values of named parameters within your route pattern
      */
-    interface Request extends IncomingMessage {
-        /**
-         * The originally-requested URL, including parent router segments.
-         */
-        originalUrl: string;
+    params: P;
 
-        /**
-         * The path portion of the requested URL.
-         */
-        path: string;
+    /**
+     * The un-parsed querystring
+     */
+    search: string | null;
 
-        /**
-         * The values of named parameters within your route pattern
-         */
-        params: {
-            [key: string]: string;
-        };
+    /**
+     * The parsed querystring
+     */
+    query: ReqQuery;
 
-        /**
-         * The un-parsed querystring
-         */
-        search: string | null;
-
-        /**
-         * The parsed querystring
-         */
-        query: {
-            [key: string]: string | string[];
-        };
+    body: ReqBody;
+}
+interface ParsedUrl {
+    search: string;
+    query: string;
+    pathname: string;
+    path: string;
+    href: string;
+    _raw?: string;
     }
 
+/**
+ * An instance of the Polka router.
+ */
+declare class Polka extends Trouter<RequestHandler> {
     /**
-     * An instance of the Polka router.
+     * Parses the `req.url` property of the given request.
      */
-    interface Polka {
-        /**
-         * Parses the `req.url` property of the given request.
-         */
-        parse(req: Request): Url;
-
-        /**
-         * Attach middleware(s) and/or sub-application(s) to the server.
-         * These will execute before your routes' handlers.
-         */
-        use(...handlers: RequestHandler[]): this;
-
-        /**
-         * Attach middleware(s) and/or sub-application(s) to the server.
-         * These will execute before your routes' handlers.
-         */
-        use(pattern: string | RegExp, ...handlers: RequestHandler[] | Polka[]): this;
-
-        /**
-         * Boots (or creates) the underlying `http.Server` for the first time.
-         */
-        listen(port?: number, hostname?: string): this;
-
-        /**
-         * Boots (or creates) the underlying `http.Server` for the first time.
-         * All arguments are passed to server.listen directly with no changes.
-         */
-        listen(...args: unknown[]): this;
-
-        /**
-         * The main Polka `IncomingMessage` handler.
-         * It receives all requests and tries to match the incoming URL against known routes.
-         */
-        handler(req: Request, res: ServerResponse, parsed?: Url): void;
-
-        /**
-         * The instantiated `server` Polka creates when `listen()` is called.
-         * `server` is only created if a server was not provided via `option.server`
-         * `server` will be undefined until polka.listen is invoked or if a server was provided.
-         */
-        server?: Server | undefined;
-
-        find(method: Trouter.HTTPMethod, url: string): Trouter.FindResult<RequestHandler>;
-
-        add(method: Trouter.HTTPMethod, pattern: string | RegExp, ...handlers: RequestHandler[]): this;
-
-        all(pattern: string | RegExp, ...handlers: RequestHandler[]): this;
-
-        get(pattern: string | RegExp, ...handlers: RequestHandler[]): this;
-
-        head(pattern: string | RegExp, ...handlers: RequestHandler[]): this;
-
-        patch(pattern: string | RegExp, ...handlers: RequestHandler[]): this;
-
-        options(pattern: string | RegExp, ...handlers: RequestHandler[]): this;
-
-        connect(pattern: string | RegExp, ...handlers: RequestHandler[]): this;
-
-        delete(pattern: string | RegExp, ...handlers: RequestHandler[]): this;
-
-        trace(pattern: string | RegExp, ...handlers: RequestHandler[]): this;
-
-        post(pattern: string | RegExp, ...handlers: RequestHandler[]): this;
-
-        put(pattern: string | RegExp, ...handlers: RequestHandler[]): this;
-    }
+    parse: (req: Request) => ParsedUrl | undefined;
 
     /**
-     * Polka options
+     * Attach middleware(s) and/or sub-application(s) to the server.
+     * These will execute before your routes' handlers.
      */
-    interface Options {
-        /**
-         * The server instance to use when `polka.listen()` is called.
-         */
-        server?: Server | undefined;
+    use(...handlers: RequestHandler[]): this;
 
-        /**
-         * A catch-all error handler; executed whenever a middleware throws an error.
-         */
-        onError?(err: Error, req: Request, res: ServerResponse, next: Next): void;
+    /**
+     * Attach middleware(s) and/or sub-application(s) to the server.
+     * These will execute before your routes' handlers.
+     */
+    use(
+    pattern: string | RegExp,
+    ...handlers: RequestHandler[] | Polka[]
+    ): this;
 
-        /**
-         * A handler when no route definitions were matched.
-         */
-        onNoMatch?(req: Request, res: ServerResponse): void;
-    }
+    /**
+     * Boots (or creates) the underlying `http.Server` for the first time.
+     * All arguments are passed to server.listen directly with no changes.
+     */
+    listen(
+    port?: number,
+    hostname?: string,
+    backlog?: number,
+    listeningListener?: () => void
+    ): this;
+    listen(
+    port?: number,
+    hostname?: string,
+    listeningListener?: () => void
+    ): this;
+    listen(
+    port?: number,
+    backlog?: number,
+    listeningListener?: () => void
+    ): this;
+    listen(port?: number, listeningListener?: () => void): this;
+    listen(
+    path: string,
+    backlog?: number,
+    listeningListener?: () => void
+    ): this;
+    listen(path: string, listeningListener?: () => void): this;
+    listen(options: ListenOptions, listeningListener?: () => void): this;
+    listen(handle: any, backlog?: number, listeningListener?: () => void): this;
+    listen(handle: any, listeningListener?: () => void): this;
+
+    /**
+     * The main Polka `IncomingMessage` handler.
+     * It receives all requests and tries to match the incoming URL against known routes.
+     */
+    handler(req: Request, res: ServerResponse, parsed?: ParsedUrl): void;
+
+    /**
+     * The instantiated `server` Polka creates when `listen()` is called.
+     * `server` is only created if a server was not provided via `option.server`
+     * `server` will be undefined until polka.listen is invoked or if a server was provided.
+     */
+    server?: Server | undefined;
+}
+type VerbHandler = <
+    P extends ParamsDictionary = ParamsDictionary,
+    ReqBody = any,
+    ReqQuery = ParsedUrlQuery
+>(
+    pattern: string | RegExp,
+    ...handlers: RequestHandler<P, ReqBody, ReqQuery>[]
+) => Polka;
+
+/**
+ * Polka options
+ */
+interface Options {
+    /**
+     * The server instance to use when `polka.listen()` is called.
+     */
+    server?: Server;
+
+    /**
+     * A catch-all error handler; executed whenever a middleware throws an error.
+     */
+    onError?(err: Error, req: Request, res: ServerResponse, next: Next): void;
+
+    /**
+     * A handler when no route definitions were matched.
+     */
+    onNoMatch?(req: Request, res: ServerResponse): void;
 }
 
 /**
@@ -155,6 +185,4 @@ declare namespace polka {
  *
  * @see https://github.com/lukeed/polka
  */
-declare function polka(opts?: polka.Options): polka.Polka;
-
-export = polka;
+export default function polka(opts?: Options): Polka;
