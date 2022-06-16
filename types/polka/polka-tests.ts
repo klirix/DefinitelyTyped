@@ -1,33 +1,54 @@
-import * as compression from 'compression';
-import * as Polka from 'polka';
+import { ServerResponse } from 'http';
+import Polka, { Middleware, Next, Request, RequestHandler } from 'polka';
 
-interface MyResponse {
+interface Body {
     foo: string;
 }
 
-const middleware: Polka.Middleware<any, MyResponse, any, any> = async (req, res, next) => {
+const middleware: Middleware<any, Body, any> = async (req, res, next) => {
     const originalUrl = req.originalUrl;
     const path = req.path;
 
-    res.send({ foo: 'bar' });
+    res.end(JSON.stringify({ foo: 'bar' }));
 
     await new Promise<void>((resolve, reject) => resolve());
     next();
 };
 
+const aHandler: RequestHandler = (req, res) => {}
+
 const routesA = Polka()
     .use(middleware)
-    .get('/a', (req, res) => {})
-    .post('/b', (req, res) => {});
+    .get('/a', aHandler)
+    .post('/b', (req, res) => {})
+    .add('PUT', '/c', aHandler)
+
+routesA.find('GET', '/a').handlers.includes(aHandler)
+
+interface AuthedRequest extends Request{
+    user?: String
+}
+
+const authMiddleware =
+    async (req: AuthedRequest, res: ServerResponse, next: Next) => {
+    if (req.headers.authorization == 'hello') {
+        req.user = 'hello'
+        next();
+    } else {
+        next(new Error('Authentication'));
+    }
+};
 
 const routesB = Polka()
-    .get('/1', (req, res) => {
+    .use(authMiddleware)
+    .get('/1', (req: AuthedRequest, res) => {
         app.server?.close();
     })
-    .delete('/2', (req, res) => {});
+    .delete('/2', (req: AuthedRequest, res) => {
+        console.log(req.user)
+    });
 
 const app = Polka()
-    .use(compression({ threshold: 0 }))
     .use('/path-a', routesA)
     .use('/path-b', routesB);
 
