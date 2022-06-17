@@ -15,24 +15,24 @@ const middleware: Middleware<any, Body, any> = async (req, res, next) => {
     next();
 };
 
-const aHandler: RequestHandler = (req, res) => {}
+const aHandler: RequestHandler = (req, res) => {};
 
 const routesA = Polka()
     .use(middleware)
     .get('/a', aHandler)
     .post('/b', (req, res) => {})
-    .add('PUT', '/c', aHandler)
+    .add('PUT', '/c', aHandler);
 
-routesA.find('GET', '/a').handlers.includes(aHandler)
+routesA.find('GET', '/a').handlers.includes(aHandler);
 
-interface AuthedRequest extends Request{
-    user?: String
+interface AuthedRequest extends Request {
+    user?: string;
 }
 
 const authMiddleware =
     async (req: AuthedRequest, res: ServerResponse, next: Next) => {
-    if (req.headers.authorization == 'hello') {
-        req.user = 'hello'
+    if (req.headers.authorization === 'hello') {
+        req.user = 'hello';
         next();
     } else {
         next(new Error('Authentication'));
@@ -45,7 +45,7 @@ const routesB = Polka()
         app.server?.close();
     })
     .delete('/2', (req: AuthedRequest, res) => {
-        console.log(req.user)
+        console.log(req.user);
     });
 
 const app = Polka()

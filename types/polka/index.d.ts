@@ -9,20 +9,20 @@
 
 /// <reference types="node" />
 
-import { IncomingMessage, Server, ServerResponse } from "http";
-import { ParsedUrlQuery } from "querystring";
-import { ListenOptions } from "net";
+import { IncomingMessage, Server, ServerResponse } from 'http';
+import { ParsedUrlQuery } from 'querystring';
+import { ListenOptions } from 'net';
 import Trouter = require('trouter');
 
-interface ParamsDictionary {
+export interface ParamsDictionary {
     [key: string]: string;
 }
 
 export interface RequestHandler<
     P extends ParamsDictionary = ParamsDictionary,
     ReqBody = any,
-    ReqQuery = ParsedUrlQuery
-    > {
+    ReqQuery = ParsedUrlQuery,
+> {
     (req: Request<P, ReqBody, ReqQuery>, res: ServerResponse, next: Next): void;
 }
 /**
@@ -31,8 +31,8 @@ export interface RequestHandler<
 export type Middleware<
     P extends ParamsDictionary = ParamsDictionary,
     ReqBody = any,
-    ReqQuery = ParsedUrlQuery
-    > = RequestHandler<P, ReqBody, ReqQuery>;
+    ReqQuery = ParsedUrlQuery,
+> = RequestHandler<P, ReqBody, ReqQuery>;
 
 /**
  * Calls the next middleware function in the chain, or throws an error.
@@ -42,11 +42,8 @@ type Next = (err?: string | Error) => void;
 /**
  * An `http.IncomingMessage`, extended by Polka
  */
-export interface Request<
-    P extends ParamsDictionary = ParamsDictionary,
-    ReqBody = any,
-    ReqQuery = ParsedUrlQuery
-    > extends IncomingMessage {
+export interface Request<P extends ParamsDictionary = ParamsDictionary, ReqBody = any, ReqQuery = ParsedUrlQuery>
+    extends IncomingMessage {
     /**
      * The originally-requested URL, including parent router segments.
      */
@@ -102,37 +99,17 @@ declare class Polka extends Trouter<RequestHandler> {
      * Attach middleware(s) and/or sub-application(s) to the server.
      * These will execute before your routes' handlers.
      */
-    use(
-        pattern: string | RegExp,
-        ...handlers: RequestHandler[] | Polka[]
-    ): this;
+    use(pattern: string | RegExp, ...handlers: RequestHandler[] | Polka[]): this;
 
     /**
      * Boots (or creates) the underlying `http.Server` for the first time.
      * All arguments are passed to server.listen directly with no changes.
      */
-    listen(
-        port?: number,
-        hostname?: string,
-        backlog?: number,
-        listeningListener?: () => void
-    ): this;
-    listen(
-        port?: number,
-        hostname?: string,
-        listeningListener?: () => void
-    ): this;
-    listen(
-        port?: number,
-        backlog?: number,
-        listeningListener?: () => void
-    ): this;
+    listen(port?: number, hostname?: string, backlog?: number, listeningListener?: () => void): this;
+    listen(port?: number, hostname?: string, listeningListener?: () => void): this;
+    listen(port?: number, backlog?: number, listeningListener?: () => void): this;
     listen(port?: number, listeningListener?: () => void): this;
-    listen(
-        path: string,
-        backlog?: number,
-        listeningListener?: () => void
-    ): this;
+    listen(path: string, backlog?: number, listeningListener?: () => void): this;
     listen(path: string, listeningListener?: () => void): this;
     listen(options: ListenOptions, listeningListener?: () => void): this;
     listen(handle: any, backlog?: number, listeningListener?: () => void): this;
@@ -151,11 +128,7 @@ declare class Polka extends Trouter<RequestHandler> {
      */
     server?: Server | undefined;
 }
-type VerbHandler = <
-    P extends ParamsDictionary = ParamsDictionary,
-    ReqBody = any,
-    ReqQuery = ParsedUrlQuery
-    >(
+type VerbHandler = <P extends ParamsDictionary = ParamsDictionary, ReqBody = any, ReqQuery = ParsedUrlQuery>(
     pattern: string | RegExp,
     ...handlers: RequestHandler<P, ReqBody, ReqQuery>[]
 ) => Polka;
@@ -185,4 +158,6 @@ interface Options {
  *
  * @see https://github.com/lukeed/polka
  */
-export default function polka(opts?: Options): Polka;
+function polka(opts?: Options): Polka;
+
+export = polka;
